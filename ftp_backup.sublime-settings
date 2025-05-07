@@ -1,0 +1,4 @@
+{
+  // Путь к корневой папке для хранения бэкапов
+  "backup_root": "C:\\Users\\aleksandr.kulakov\\Desktop\\BackUp",
+}

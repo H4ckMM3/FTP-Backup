@@ -1,0 +1,136 @@
+[
+    {
+        "id": "preferences",
+        "children": [
+            {
+                "caption": "Package Settings",
+                "mnemonic": "P",
+                "id": "package-settings",
+                "children": [
+                    {
+                        "caption": "FTP Backup",
+                        "children": [
+                            {
+                                "caption": "Settings",
+                                "command": "ftp_backup_open_settings"
+                            },
+                            {
+                                "caption": "Browse Backup Folder",
+                                "command": "ftp_backup_browse_folder"
+                            },
+                            {
+                                "caption": "Show Current Path",
+                                "command": "ftp_backup_show_current_path"
+                            },
+                            {
+                                "caption": "Open Backup Folder",
+                                "command": "ftp_backup_open_folder_in_explorer"
+                            },
+                            { "caption": "-" },
+                            {
+                                "caption": "Create ZIP Archive",
+                                "command": "ftp_backup_create_zip"
+                            },
+                            { "caption": "-" },
+                            {
+                                "caption": "Create Before Backup",
+                                "command": "ftp_backup_create_before"
+                            },
+                            {
+                                "caption": "Create After Backup",
+                                "command": "ftp_backup_create_after"
+                            },
+                            {
+                                "caption": "Открыть интерфейс FTP Backup",
+                                "command": "ftp_backup_ui"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "tools",
+        "children": [
+            { "caption": "-" },
+            {
+                "caption": "FTP Backup",
+                "children": [
+                    {
+                        "caption": "Show Mini Panel (Alt+B)",
+                        "command": "ftp_backup_show_mini_panel"
+                    },
+                    {
+                        "caption": "Open Interface",
+                        "command": "ftp_backup_interface"
+                    },
+                    {
+                        "caption": "Save with Backup (Ctrl+Shift+R)",
+                        "command": "ftp_backup_save"
+                    },
+                    { "caption": "-" },
+                    {
+                        "caption": "Create Before Backup",
+                        "command": "ftp_backup_create_before"
+                    },
+                    {
+                        "caption": "Create After Backup",
+                        "command": "ftp_backup_create_after"
+                    },
+                    { "caption": "-" },
+                    {
+                        "caption": "Create ZIP Archive",
+                        "command": "ftp_backup_create_zip"
+                    },
+                    { "caption": "-" },
+                    {
+                        "caption": "Browse Backup Folder",
+                        "command": "ftp_backup_browse_folder"
+                    },
+                    {
+                        "caption": "Show Current Path",
+                        "command": "ftp_backup_show_current_path"
+                    },
+                    {
+                        "caption": "Open Settings",
+                        "command": "ftp_backup_open_settings"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "caption": "FTP Backup",
+        "id": "ftp-backup-context",
+        "children": [
+            {
+                "caption": "Показать мини-панель",
+                "command": "ftp_backup_mini_panel"
+            },
+            { "caption": "-" },
+            {
+                "caption": "Сохранить с бэкапом",
+                "command": "ftp_backup_save"
+            },
+            { "caption": "-" },
+            {
+                "caption": "Создать бэкап \"До\"",
+                "command": "ftp_backup_create_before"
+            },
+            {
+                "caption": "Создать бэкап \"После\"",
+                "command": "ftp_backup_create_after"
+            },
+            { "caption": "-" },
+            {
+                "caption": "Сменить задачу",
+                "command": "ftp_backup_show_task_input"
+            },
+            {
+                "caption": "Открыть интерфейс",
+                "command": "ftp_backup_interface"
+            }
+        ]
+    }
+]

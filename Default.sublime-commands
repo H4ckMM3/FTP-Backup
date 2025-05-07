@@ -1,0 +1,39 @@
+[
+    {
+        "caption": "FTP Backup: Create Before Backup",
+        "command": "ftp_backup_create_before"
+    },
+    {
+        "caption": "FTP Backup: Create After Backup", 
+        "command": "ftp_backup_create_after"
+    },
+    {
+        "caption": "FTP Backup: Create ZIP Archive",
+        "command": "ftp_backup_create_zip"
+    },
+    {
+        "caption": "FTP Backup: Open Settings",
+        "command": "ftp_backup_open_settings"
+    },
+    {
+        "caption": "FTP Backup: Browse Folder",
+        "command": "ftp_backup_browse_folder"
+    },
+    {
+        "caption": "FTP Backup: Show Current Path",
+        "command": "ftp_backup_show_current_path"
+    },
+    {
+        "caption": "FTP Backup: Open Backup Folder",
+        "command": "ftp_backup_open_folder_in_explorer"
+    },
+    
+    {
+    "caption": "FTP Backup: Open Interface",
+    "command": "ftp_backup_interface"
+    },
+    {
+        "caption": "FTP Backup: Показать мини-панель",
+        "command": "ftp_backup_show_mini_panel"
+    },
+]

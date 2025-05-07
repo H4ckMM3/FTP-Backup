@@ -1,0 +1,41 @@
+[
+    // Назначаем комбинацию Ctrl+Shift+R для сохранения с бэкапом
+    {
+        "keys": ["ctrl+shift+r"],
+        "command": "ftp_backup_save"
+    },
+    
+    // Перехватываем и блокируем стандартное сохранение Ctrl+S
+    {
+        "keys": ["ctrl+s"],
+        "command": "noop"
+    },
+    
+    // Перехватываем и блокируем Ctrl+Shift+S (Save As...)
+    {
+        "keys": ["ctrl+shift+s"],  
+        "command": "noop"
+    },
+    
+    // Перехватываем и блокируем другие комбинации для сохранения
+    {
+        "keys": ["alt+shift+s"],
+        "command": "noop"
+    },
+
+    // Добавляем комбинацию Alt+B для вызова мини-панели FTP Backup
+    {
+        "keys": ["alt+b"],
+        "command": "ftp_backup_show_mini_panel"
+    },
+
+    // Добавляем комбинацию Ctrl+Alt+B для открытия полного интерфейса
+    {
+        "keys": ["ctrl+alt+b"],
+        "command": "ftp_backup_interface"
+    },
+    {
+        "keys": ["ctrl+alt+v"],
+        "command": "ftp_backup_ui"
+    }
+]

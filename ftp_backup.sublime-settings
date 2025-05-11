@@ -1,4 +1,6 @@
 {
   // Путь к корневой папке для хранения бэкапов
   "backup_root": "${packages}/User/ftp_backups",
+
+  "create_month_folder": true
 }

@@ -36,9 +36,12 @@
 ### Через Package Control (рекомендуется)
 
 1. Откройте **Command Palette** (Ctrl+Shift+P или Cmd+Shift+P на Mac)
-2. Выберите `Package Control: Install Package`
-3. Найдите и выберите `FTP Backup`
-
+2. Выберите `Package Control: Add Repository`
+3. Вставьте URL нашего репозитория `https://github.com/H4ckMM3/FTP-Backup.git`
+4. Снова откройте **Command Palette**
+5. Выберите `Package Control: Install Package`
+6.Найдите в списке `FTP Backup` и выберите его
+   
 ### Вручную
 
 1. Скачайте или клонируйте этот репозиторий

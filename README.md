@@ -33,7 +33,7 @@
 
 ## 🔧 Установка
 
-### Через Package Control (рекомендуется)
+### Через Package Control
 
 1. Откройте **Command Palette** (Ctrl+Shift+P или Cmd+Shift+P на Mac)
 2. Выберите `Package Control: Add Repository`
@@ -42,11 +42,10 @@
 5. Выберите `Package Control: Install Package`
 6. Найдите в списке `FTP Backup` и выберите его
    
-### Вручную
+### Вручную (рекомендуется)
 
 1. Скачайте или клонируйте этот репозиторий
-2. Переименуйте папку в `FTP Backup`
-3. Переместите папку в директорию пакетов Sublime Text:
+2. Переместите все файлы из папки в папку User:
    - **Windows**: `%APPDATA%\Sublime Text\Packages\`
    - **macOS**: `~/Library/Application Support/Sublime Text/Packages/`
    - **Linux**: `~/.config/sublime-text/Packages/`

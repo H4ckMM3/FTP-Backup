@@ -40,7 +40,7 @@
 3. Вставьте URL нашего репозитория `https://github.com/H4ckMM3/FTP-Backup.git`
 4. Снова откройте **Command Palette**
 5. Выберите `Package Control: Install Package`
-6.Найдите в списке `FTP Backup` и выберите его
+6. Найдите в списке `FTP Backup` и выберите его
    
 ### Вручную
 

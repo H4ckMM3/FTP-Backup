@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2025 Web_Support_Ingate
+Copyright (c) 2025 Web_Support
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

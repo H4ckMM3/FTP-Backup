@@ -386,183 +386,224 @@ class FtpBackupManager:
             return None
 
     def backup_file(self, file_path, server_name=None, mode=None, task_number=None):
-        """
-        Создание бэкапа с указанием имени проекта и номера задачи
-        mode: None (автоматический), 'before', 'after'
-        task_number: Номер задачи (опционально)
-        server_name: Имя проекта (опционально)
-        """
-        try:
-            excluded_files = [
-                'default.sublime-commands', 
-                '.sublime-commands', 
-                '.DS_Store',  
-                'Thumbs.db'  
-            ]
-            
-            if (os.path.basename(file_path) in excluded_files or 
-                any(ext in file_path for ext in excluded_files)):
-                self.logger.debug(f"Файл {file_path} исключен из бэкапа")
-                return None, None, None
+            """
+            Создание бэкапа с указанием имени проекта и номера задачи
+            mode: None (автоматический), 'before', 'after'
+            task_number: Номер задачи (опционально)
+            server_name: Имя проекта (опционально)
+            """
+            try:
+                excluded_files = [
+                    'default.sublime-commands', 
+                    '.sublime-commands', 
+                    '.DS_Store',  
+                    'Thumbs.db'  
+                ]
+                
+                if (os.path.basename(file_path) in excluded_files or 
+                    any(ext in file_path for ext in excluded_files)):
+                    self.logger.debug(f"Файл {file_path} исключен из бэкапа")
+                    return None, None, None
 
-            if not os.path.exists(file_path):
-                self.logger.error(f"Файл не существует: {file_path}")
-                return None, None, None
-            
-            # Обнаруживаем переименованные папки и обновляем сопоставление
-            self._detect_renamed_folders()
-            
-            # Получаем имя проекта из параметра или из сохраненного соответствия
-            site_name = server_name
-            if not site_name:
-                saved_site = self._check_site_name_mapping(file_path)
-                if saved_site:
-                    site_name = saved_site
+                if not os.path.exists(file_path):
+                    self.logger.error(f"Файл не существует: {file_path}")
+                    return None, None, None
+                
+                # Обнаруживаем переименованные папки и обновляем сопоставление
+                self._detect_renamed_folders()
+                
+                # Получаем имя проекта из параметра или из сохраненного соответствия
+                site_name = server_name
+                if not site_name:
+                    saved_site = self._check_site_name_mapping(file_path)
+                    if saved_site:
+                        site_name = saved_site
+                    else:
+                        # Если нет ни параметра, ни сохраненного соответствия, используем имя хоста
+                        site_name = socket.gethostname()
+                
+                # Создаем ключ папки сайта из имени сайта
+                default_key = re.sub(r'[^\w\-_.]', '_', site_name)
+                
+                # Проверяем, есть ли сопоставление с папкой
+                server_key = default_key
+                if site_name in self.folder_mapping:
+                    server_key = self.folder_mapping[site_name]
+                    self.logger.debug(f"Используется сопоставленная папка {server_key} для проекта {site_name}")
                 else:
-                    # Если нет ни параметра, ни сохраненного соответствия, используем имя хоста
-                    site_name = socket.gethostname()
-            
-            # Создаем ключ папки сайта из имени сайта
-            default_key = re.sub(r'[^\w\-_.]', '_', site_name)
-            
-            # Проверяем, есть ли сопоставление с папкой
-            server_key = default_key
-            if site_name in self.folder_mapping:
-                server_key = self.folder_mapping[site_name]
-                self.logger.debug(f"Используется сопоставленная папка {server_key} для проекта {site_name}")
-            else:
-                # Проверяем, нет ли уже папки с таким именем
-                if os.path.exists(os.path.join(self.backup_root, default_key)):
-                    # Используем существующую папку
-                    server_key = default_key
-                else:
-                    # Создаем новую папку и проверяем, что имя уникально
-                    index = 1
-                    while os.path.exists(os.path.join(self.backup_root, server_key)):
-                        server_key = f"{default_key}_{index}"
-                        index += 1
-                
-                # Добавляем новое сопоставление
-                self.folder_mapping[site_name] = server_key
-                self._save_folder_mapping()
-                self.logger.debug(f"Создано новое сопоставление проект {site_name} -> папка {server_key}")
-            
-            self.logger.debug(f"Проект: {site_name}, Ключ проекта: {server_key}")
-
-      
-       
-            current_month_year = datetime.now().strftime("%B %Y")
-            server_folder = os.path.join(self.backup_root, server_key)
-            if not os.path.exists(server_folder):
-                os.makedirs(server_folder, exist_ok=True)
-                self.logger.debug(f"Создана новая папка для сайта: {server_key}")
-            else:
-                self.logger.debug(f"Используется существующая папка для сайта: {server_key}")
-            
-            # Проверяем настройки создания месячных папок
-            create_month_folder = True
-            settings = sublime.load_settings('ftp_backup.sublime-settings')
-            if settings.has('create_month_folder'):
-                create_month_folder = settings.get('create_month_folder')
-            
-            if create_month_folder:
-                month_year_folder = os.path.join(server_folder, current_month_year)
-                if not os.path.exists(month_year_folder):
-                    os.makedirs(month_year_folder, exist_ok=True)
-                    self.logger.debug(f"Создана новая папка для месяца: {current_month_year}")
-                else:
-                    self.logger.debug(f"Используется существующая папка для месяца: {current_month_year}")
-            else:
-                # Если не используем месячные папки, используем корневую папку сайта
-                month_year_folder = server_folder
-                self.logger.debug("Создание месячных папок отключено, используется корневая папка сайта")
-            
-            # Добавляем папку с номером задачи, если указан
-            if task_number:
-               task_folder = os.path.join(month_year_folder, task_number)
-               self.logger.debug(f"Используется папка задачи: {task_number}")
-            else:
-                task_folder = month_year_folder
-                self.logger.debug("Используется папка без номера задачи")
-            
-            if not os.path.exists(task_folder):
-                os.makedirs(task_folder, exist_ok=True)
-            
-            before_path = os.path.join(task_folder, 'before')
-            after_path = os.path.join(task_folder, 'after')
-
-            os.makedirs(before_path, exist_ok=True)
-            os.makedirs(after_path, exist_ok=True)
-            
-            relative_path = self._extract_relative_path(file_path)
-            
-            self.logger.debug(f"Относительный путь: {relative_path}")
-
-            if mode == 'before':
-                backup_path = os.path.join(before_path, relative_path)
-                os.makedirs(os.path.dirname(backup_path), exist_ok=True)
-                shutil.copy2(file_path, backup_path)
-                self.logger.debug(f"Создан принудительный 'before' бэкап в {backup_path}")
-                
-                if relative_path not in self.server_backup_map:
-                    self.server_backup_map[relative_path] = {
-                        'first_backup_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'site': site_name,
-                        'backup_dir': os.path.dirname(backup_path)
-                    }
-            
-            elif mode == 'after':
-                backup_path = os.path.join(after_path, relative_path)
-                os.makedirs(os.path.dirname(backup_path), exist_ok=True)
-                
-                if os.path.exists(backup_path):
-                    os.remove(backup_path)
-                
-                shutil.copy2(file_path, backup_path)
-                self.logger.debug(f"Создан принудительный 'after' бэкап в {backup_path}")
-                
-                # Обновляем информацию о директории бэкапа в мапе
-                if relative_path in self.server_backup_map:
-                    self.server_backup_map[relative_path]['backup_dir'] = os.path.dirname(backup_path)
-            
-            else:
-                first_backup_path = os.path.join(before_path, relative_path)
-                after_backup_path = os.path.join(after_path, relative_path)
-                
-                os.makedirs(os.path.dirname(first_backup_path), exist_ok=True)
-                os.makedirs(os.path.dirname(after_backup_path), exist_ok=True)
-
-                if relative_path not in self.server_backup_map:
-                    shutil.copy2(file_path, first_backup_path)
+                    # Проверяем, нет ли уже папки с таким именем
+                    if os.path.exists(os.path.join(self.backup_root, default_key)):
+                        # Используем существующую папку
+                        server_key = default_key
+                    else:
+                        # Создаем новую папку и проверяем, что имя уникально
+                        index = 1
+                        while os.path.exists(os.path.join(self.backup_root, server_key)):
+                            server_key = f"{default_key}_{index}"
+                            index += 1
                     
-                    self.server_backup_map[relative_path] = {
-                        'first_backup_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'site': site_name,
-                        'backup_dir': os.path.dirname(first_backup_path)
-                    }
+                    # Добавляем новое сопоставление
+                    self.folder_mapping[site_name] = server_key
+                    self._save_folder_mapping()
+                    self.logger.debug(f"Создано новое сопоставление проект {site_name} -> папка {server_key}")
+                
+                self.logger.debug(f"Проект: {site_name}, Ключ проекта: {server_key}")
 
-                if os.path.exists(after_backup_path):
-                    os.remove(after_backup_path)
+                current_month_year = datetime.now().strftime("%B %Y")
+                server_folder = os.path.join(self.backup_root, server_key)
+                if not os.path.exists(server_folder):
+                    os.makedirs(server_folder, exist_ok=True)
+                    self.logger.debug(f"Создана новая папка для сайта: {server_key}")
+                else:
+                    self.logger.debug(f"Используется существующая папка для сайта: {server_key}")
                 
-                shutil.copy2(file_path, after_backup_path)
+                # Проверяем настройки создания месячных папок
+                create_month_folder = True
+                settings = sublime.load_settings('ftp_backup.sublime-settings')
+                if settings.has('create_month_folder'):
+                    create_month_folder = settings.get('create_month_folder')
                 
-                # Обновляем информацию о директории бэкапа в мапе
+                if create_month_folder:
+                    month_year_folder = os.path.join(server_folder, current_month_year)
+                    if not os.path.exists(month_year_folder):
+                        os.makedirs(month_year_folder, exist_ok=True)
+                        self.logger.debug(f"Создана новая папка для месяца: {current_month_year}")
+                    else:
+                        self.logger.debug(f"Используется существующая папка для месяца: {current_month_year}")
+                else:
+                    # Если не используем месячные папки, используем корневую папку сайта
+                    month_year_folder = server_folder
+                    self.logger.debug("Создание месячных папок отключено, используется корневая папка сайта")
+                
+                # Добавляем папку с номером задачи, если указан
+                if task_number:
+                    task_folder = os.path.join(month_year_folder, task_number)
+                    self.logger.debug(f"Используется папка задачи: {task_number}")
+                else:
+                    task_folder = month_year_folder
+                    self.logger.debug("Используется папка без номера задачи")
+                
+                if not os.path.exists(task_folder):
+                    os.makedirs(task_folder, exist_ok=True)
+                
+                before_path = os.path.join(task_folder, 'before')
+                after_path = os.path.join(task_folder, 'after')
+
+                os.makedirs(before_path, exist_ok=True)
+                os.makedirs(after_path, exist_ok=True)
+                
+                relative_path = self._extract_relative_path(file_path)
+                
+                self.logger.debug(f"Относительный путь: {relative_path}")
+
+                def perform_copy(backup_path):
+                    """Функция для выполнения копирования"""
+                    # Проверка прав на запись
+                    if os.path.exists(backup_path) and not os.access(backup_path, os.W_OK):
+                        self.logger.error(f"Недостаточно прав для записи в файл: {backup_path}")
+                        sublime.status_message(f"FTP Backup: Недостаточно прав для перезаписи файла: {os.path.basename(backup_path)}. Операция отменена.")
+                        return False  # Указываем, что операция не удалась
+                    
+                    shutil.copy2(file_path, backup_path)
+                    self.logger.debug(f"Создан/перезаписан бэкап в {backup_path}")
+                    if relative_path not in self.server_backup_map:
+                        self.server_backup_map[relative_path] = {
+                            'first_backup_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            'site': site_name,
+                            'backup_dir': os.path.dirname(backup_path)
+                        }
+                    self.server_backup_map[relative_path]['last_backup_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    self.server_backup_map[relative_path]['site'] = site_name
+                    self._save_config()
+                    return True  # Указываем, что операция удалась
+
+                if mode == 'before':
+                    backup_path = os.path.join(before_path, relative_path)
+                    os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+                    
+                    # Проверка на существование файла
+                    if os.path.exists(backup_path):
+                        should_overwrite = sublime.ok_cancel_dialog(f"Файл {os.path.basename(file_path)} уже существует в 'before'. Перезаписать файл?", "Да")
+                        if should_overwrite:
+                            if not perform_copy(backup_path):
+                                return before_path, after_path, site_name  # Пропускаем дальнейшую обработку
+                        else:
+                            self.logger.debug(f"Перезапись файла 'before' отменена пользователем: {backup_path}")
+                            return before_path, after_path, site_name  # Пропускаем сохранение
+                    else:
+                        perform_copy(backup_path)
+                
+                elif mode == 'after':
+                    backup_path = os.path.join(after_path, relative_path)
+                    os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+                    
+                    # Проверка на существование файла
+                    if os.path.exists(backup_path):
+                        should_overwrite = sublime.ok_cancel_dialog(f"Файл {os.path.basename(file_path)} уже существует в 'after'. Перезаписать файл?", "Да")
+                        if should_overwrite:
+                            if not perform_copy(backup_path):
+                                return before_path, after_path, site_name  # Пропускаем дальнейшую обработку
+                        else:
+                            self.logger.debug(f"Перезапись файла 'after' отменена пользователем: {backup_path}")
+                            return before_path, after_path, site_name  # Пропускаем сохранение
+                    else:
+                        perform_copy(backup_path)
+                
+                else:
+                    first_backup_path = os.path.join(before_path, relative_path)
+                    after_backup_path = os.path.join(after_path, relative_path)
+                    
+                    os.makedirs(os.path.dirname(first_backup_path), exist_ok=True)
+                    os.makedirs(os.path.dirname(after_backup_path), exist_ok=True)
+
+                    if relative_path not in self.server_backup_map:
+                        # Проверка на существование файла в 'before'
+                        if os.path.exists(first_backup_path):
+                            should_overwrite = sublime.ok_cancel_dialog(f"File {os.path.basename(file_path)} already exists in 'before'. Overwrite file?", "Yes")
+                            if should_overwrite:
+                                if not perform_copy(first_backup_path):
+                                    return before_path, after_path, site_name  # Пропускаем дальнейшую обработку
+                            else:
+                                self.logger.debug(f"Перезапись файла 'before' отменена пользователем: {first_backup_path}")
+                                return before_path, after_path, site_name  # Пропускаем сохранение
+                        else:
+                            perform_copy(first_backup_path)
+                        
+                        self.server_backup_map[relative_path] = {
+                            'first_backup_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            'site': site_name,
+                            'backup_dir': os.path.dirname(first_backup_path)
+                        }
+
+                    # Проверка на существование файла в 'after'
+                    if os.path.exists(after_backup_path):
+                        should_overwrite = sublime.ok_cancel_dialog(f"File {os.path.basename(file_path)} already exists in 'after'. Overwrite file?", "Yes")
+                        if should_overwrite:
+                            if not perform_copy(after_backup_path):
+                                return before_path, after_path, site_name  # Пропускаем дальнейшую обработку
+                        else:
+                            self.logger.debug(f"Перезапись файла 'after' отменена пользователем: {after_backup_path}")
+                            return before_path, after_path, site_name  # Пропускаем сохранение
+                    else:
+                        perform_copy(after_backup_path)
+                    
+                    # Обновляем информацию о директории бэкапа в мапе
+                    if relative_path in self.server_backup_map:
+                        self.server_backup_map[relative_path]['backup_dir'] = os.path.dirname(after_backup_path)
+
                 if relative_path in self.server_backup_map:
-                    self.server_backup_map[relative_path]['backup_dir'] = os.path.dirname(after_backup_path)
+                    self.server_backup_map[relative_path]['last_backup_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    self.server_backup_map[relative_path]['site'] = site_name
+                
+                self._save_config()
+                
+                # Возвращаем имя сайта для проверки смены сервера
+                return before_path, after_path, site_name
 
-            if relative_path in self.server_backup_map:
-                self.server_backup_map[relative_path]['last_backup_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                self.server_backup_map[relative_path]['site'] = site_name
-            
-            self._save_config()
-            
-            # Возвращаем имя сайта для проверки смены сервера
-            return before_path, after_path, site_name
-
-        except Exception as e:
-            self.logger.error(f"Критическая ошибка бэкапа: {e}")
-            sublime.status_message(f"FTP Backup ERROR: {e}")
-            return None, None, None
+            except Exception as e:
+                self.logger.error(f"Критическая ошибка бэкапа: {e}")
+                sublime.status_message(f"FTP Backup ERROR: {e}")
+                return None, None, None
 
     def _save_config(self):
         """Сохранение конфигурации с расширенной отладкой"""
@@ -1005,23 +1046,37 @@ class FtpBackupCreateBeforeCommand(sublime_plugin.TextCommand):
         self.backup_manager = FtpBackupManager(backup_root)
         self.file_path = file_path
         
+        # Проверяем глобальные переменные
+        global CURRENT_SERVER, CURRENT_TASK_NUMBER
+        
         # Проверяем, есть ли уже сохраненное имя проекта
         saved_site = self.backup_manager._check_site_name_mapping(file_path)
-        if saved_site:
+        if saved_site and not CURRENT_SERVER:
+            CURRENT_SERVER = saved_site
             self.backup_manager.logger.debug(f"Используется сохраненное имя проекта: {saved_site}")
-            self.on_project_name_entered(saved_site)
+        
+        if CURRENT_SERVER and CURRENT_TASK_NUMBER:
+            self.on_task_number_entered(CURRENT_TASK_NUMBER)
         else:
-            # Пытаемся найти предполагаемое имя проекта
-            suggested_name = self.get_suggested_project_name(file_path)
-            
-            # Запрашиваем у пользователя имя проекта
-            self.view.window().show_input_panel(
-                "Введите название проекта:", 
-                suggested_name if suggested_name else "", 
-                self.on_project_name_entered, 
-                None, 
-                None
-            )
+            # Запрашиваем имя проекта, если его нет
+            if not CURRENT_SERVER:
+                suggested_name = self.get_suggested_project_name(file_path)
+                self.view.window().show_input_panel(
+                    "Введите название проекта:", 
+                    suggested_name if suggested_name else "", 
+                    self.on_project_name_entered, 
+                    None, 
+                    None
+                )
+            else:
+                # Если имя проекта есть, но нет номера задачи, запрашиваем его
+                self.view.window().show_input_panel(
+                    "Введите название папки задачи:", 
+                    "", 
+                    self.on_task_number_entered, 
+                    None, 
+                    None
+                )
     
     def get_suggested_project_name(self, file_path):
         """Пытается определить имя проекта из пути к файлу"""
@@ -1146,23 +1201,37 @@ class FtpBackupCreateAfterCommand(sublime_plugin.TextCommand):
         self.backup_manager = FtpBackupManager(backup_root)
         self.file_path = file_path
         
+        # Проверяем глобальные переменные
+        global CURRENT_SERVER, CURRENT_TASK_NUMBER
+        
         # Проверяем, есть ли уже сохраненное имя проекта
         saved_site = self.backup_manager._check_site_name_mapping(file_path)
-        if saved_site:
+        if saved_site and not CURRENT_SERVER:
+            CURRENT_SERVER = saved_site
             self.backup_manager.logger.debug(f"Используется сохраненное имя проекта: {saved_site}")
-            self.on_project_name_entered(saved_site)
+        
+        if CURRENT_SERVER and CURRENT_TASK_NUMBER:
+            self.on_task_number_entered(CURRENT_TASK_NUMBER)
         else:
-            # Пытаемся найти предполагаемое имя проекта
-            suggested_name = self.get_suggested_project_name(file_path)
-            
-            # Запрашиваем у пользователя имя проекта
-            self.view.window().show_input_panel(
-                "Введите название проекта:", 
-                suggested_name if suggested_name else "", 
-                self.on_project_name_entered, 
-                None, 
-                None
-            )
+            # Запрашиваем имя проекта, если его нет
+            if not CURRENT_SERVER:
+                suggested_name = self.get_suggested_project_name(file_path)
+                self.view.window().show_input_panel(
+                    "Введите название проекта:", 
+                    suggested_name if suggested_name else "", 
+                    self.on_project_name_entered, 
+                    None, 
+                    None
+                )
+            else:
+                # Если имя проекта есть, но нет номера задачи, запрашиваем его
+                self.view.window().show_input_panel(
+                    "Введите название папки задачи:", 
+                    "", 
+                    self.on_task_number_entered, 
+                    None, 
+                    None
+                )
     
     def get_suggested_project_name(self, file_path):
         """Пытается определить имя проекта из пути к файлу"""

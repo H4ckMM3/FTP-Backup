@@ -841,4 +841,4 @@ class FtpBackupCustomBackupCommand(sublime_plugin.TextCommand):
 
 ---
 
-_Последнее обновление: Январь 2025_
+_Последнее обновление: Июнь 2025_
